@@ -21,5 +21,6 @@ public class ControllableExecutor implements Executor {
 
             }
         }
+        pending.clear();
     }
 }

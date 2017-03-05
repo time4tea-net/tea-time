@@ -49,5 +49,13 @@ public class ControllableExecutorTest {
         assertThat(value2.get(), equalTo(1));
     }
 
-
+    @Test
+    public void onlyRunsTasksOnce() throws Exception {
+        AtomicInteger value = new AtomicInteger(0);
+        executor.execute(value::incrementAndGet);
+        executor.runPendingTasks();
+        executor.runPendingTasks();
+        executor.runPendingTasks();
+        assertThat(value.get(), equalTo(1));
+    }
 }
