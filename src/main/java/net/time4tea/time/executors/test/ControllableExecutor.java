@@ -17,7 +17,7 @@ public class ControllableExecutor implements Executor {
         for (Runnable runnable : pending) {
             try {
                 runnable.run();
-            } catch (RuntimeException e) {
+            } catch (RuntimeException ignored) {
 
             }
         }
