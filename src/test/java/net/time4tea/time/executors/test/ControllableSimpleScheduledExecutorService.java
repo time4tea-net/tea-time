@@ -133,11 +133,7 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
     private void runPendingTasks() {
         for (SimpleScheduleTask task : tasks) {
             if (task.timeToRun <= clock) {
-                try {
-                    task.execute();
-                } catch (Exception e) {
-
-                }
+                task.execute();
             }
         }
     }
