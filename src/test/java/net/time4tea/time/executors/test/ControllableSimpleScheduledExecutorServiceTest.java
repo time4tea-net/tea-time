@@ -38,6 +38,16 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         future.cancel(true);
         service.timePasses(Duration.ofSeconds(1));
         assertThat(counter.get(), equalTo(0));
+        assertThat(future.isCancelled(), equalTo(true));
+    }
+
+    @Test
+    public void canRetrieveTheResultOnceTheTaskHasRun() throws Exception {
+        ScheduledFuture<Integer> future = service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
+        service.timePasses(Duration.ofSeconds(1));
+        assertThat(counter.get(), equalTo(1));
+        assertThat(future.get(), equalTo(1));
+        assertThat(future.isDone(), equalTo(true));
     }
 
 
@@ -50,6 +60,7 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         private class SimpleScheduleTask<T> implements ScheduledFuture<T> {
             private final Callable<T> callable;
             private boolean isCancelled = false;
+            private boolean isDone = false;
             private final Duration delay;
             private final long timeToRun;
             private T result;
@@ -78,17 +89,17 @@ public class ControllableSimpleScheduledExecutorServiceTest {
 
             @Override
             public boolean isCancelled() {
-                throw new UnsupportedOperationException("james didn't write");
+                return isCancelled;
             }
 
             @Override
             public boolean isDone() {
-                throw new UnsupportedOperationException("james didn't write");
+                return isDone;
             }
 
             @Override
             public T get() throws InterruptedException, ExecutionException {
-                throw new UnsupportedOperationException("james didn't write");
+                return result;
             }
 
             @Override
@@ -98,9 +109,14 @@ public class ControllableSimpleScheduledExecutorServiceTest {
 
             public void execute() {
                 try {
-                    if (! isCancelled) callable.call();
+                    if (! isCancelled) {
+                        result = callable.call();
+                    }
                 } catch (Exception e) {
 
+                }
+                finally {
+                    isDone = true;
                 }
             }
         }
