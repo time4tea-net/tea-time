@@ -33,6 +33,16 @@ public class ControllableSimpleScheduledExecutorServiceTest {
     }
 
     @Test
+    public void tasksAreRunAtTheRightTime() throws Exception {
+        service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
+        assertThat(counter.get(), equalTo(0));
+        service.timePasses(Duration.ofMillis(999));
+        assertThat(counter.get(), equalTo(0));
+        service.timePasses(Duration.ofMillis(1));
+        assertThat(counter.get(), equalTo(1));
+    }
+
+    @Test
     public void runsScheduledTasksThatAreSubmittedAtTheCorrectTime() throws Exception {
         assertThat(counter.get(), equalTo(0));
         service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
