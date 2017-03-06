@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ControllableSimpleScheduledExecutorServiceTest {
 
@@ -38,6 +39,16 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         assertThat(counter.get(), equalTo(0));
         service.timePasses(Duration.ofSeconds(1));
         assertThat(counter.get(), equalTo(1));
+    }
+
+    @Test
+    public void schedulingARunnableRunsItAtTheRightTime() throws Exception {
+        Runnable runnable = () -> counter.incrementAndGet();
+        ScheduledFuture<?> future = service.schedule(runnable, Duration.ofDays(1));
+        assertThat(counter.get(), equalTo(0));
+        service.timePasses(Duration.ofDays(1));
+        assertThat(counter.get(), equalTo(1));
+        assertThat(future.get(), nullValue());
     }
 
     @Test
@@ -211,7 +222,12 @@ public class ControllableSimpleScheduledExecutorServiceTest {
 
         @Override
         public ScheduledFuture<?> schedule(Runnable runnable, Duration delay) {
-            return null;
+            return enqueue(new SimpleScheduleTask<>(
+                    () -> {
+                        runnable.run();
+                        return null;
+                    }, delay, clock + delay.toMillis()
+            ));
         }
 
         @Override
