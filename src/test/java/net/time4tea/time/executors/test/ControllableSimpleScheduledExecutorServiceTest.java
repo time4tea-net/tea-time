@@ -24,6 +24,14 @@ public class ControllableSimpleScheduledExecutorServiceTest {
     }
 
     @Test
+    public void tasksSubmittedAfterShutdownAreIgnored() throws Exception {
+        service.shutdown();
+        service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
+        service.timePasses(Duration.ofSeconds(2));
+        assertThat(counter.get(), equalTo(0));
+    }
+
+    @Test
     public void runsScheduledTasksThatAreSubmittedAtTheCorrectTime() throws Exception {
         assertThat(counter.get(), equalTo(0));
         service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
@@ -77,6 +85,33 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         future.get(1, TimeUnit.MILLISECONDS);
     }
 
+    @Test
+    public void taskThrowingExceptionStillRunsOtherTasks() throws Exception {
+        service.schedule(() -> {throw new NullPointerException();}, Duration.ofSeconds(1));
+        service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
+        service.timePasses(Duration.ofSeconds(1));
+        assertThat(counter.get(), equalTo(1));
+    }
+
+    @Test(expected = ExecutionException.class)
+    public void retrievingResultOfFailedTask() throws Exception {
+        ScheduledFuture<?> future = service.schedule(() -> {
+            throw new NullPointerException();
+        }, Duration.ofSeconds(1));
+        service.timePasses(Duration.ofSeconds(1));
+
+        future.get();
+    }
+
+    @Test(expected = ExecutionException.class)
+    public void retrievingResultOfFailedTaskWithTimeout() throws Exception {
+        ScheduledFuture<?> future = service.schedule(() -> {
+            throw new NullPointerException();
+        }, Duration.ofSeconds(1));
+        service.timePasses(Duration.ofSeconds(1));
+
+        future.get(1, TimeUnit.MILLISECONDS);
+    }
 
     public static class ControllableSimpleScheduledExecutorService implements SimpleScheduledExecutorService {
 
@@ -91,6 +126,7 @@ public class ControllableSimpleScheduledExecutorServiceTest {
             private final Duration delay;
             private final long timeToRun;
             private T result;
+            private Throwable error;
 
             public SimpleScheduleTask(Callable<T> callable, Duration delay, long timeToRun) {
                 this.callable = callable;
@@ -127,6 +163,7 @@ public class ControllableSimpleScheduledExecutorServiceTest {
             @Override
             public T get() throws InterruptedException, ExecutionException {
                 if ( isCancelled ) throw new CancellationException("get() on cancelled task");
+                if ( error != null ) throw new ExecutionException(error);
                 if ( isDone ) return result;
                 throw new IllegalStateException("get() before task runs");
             }
@@ -134,6 +171,7 @@ public class ControllableSimpleScheduledExecutorServiceTest {
             @Override
             public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
                 if ( isCancelled ) throw new CancellationException("get(timeout) on cancelled task");
+                if ( error != null ) throw new ExecutionException(error);
                 if ( isDone ) return result;
                 throw new TimeoutException("task not scheduled to run for another " + Duration.ofMillis(
                         timeToRun - clock
@@ -146,7 +184,7 @@ public class ControllableSimpleScheduledExecutorServiceTest {
                         result = callable.call();
                     }
                 } catch (Exception e) {
-
+                    error = e;
                 }
                 finally {
                     isDone = true;
@@ -167,7 +205,7 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         }
 
         private <T> ScheduledFuture<T> enqueue(SimpleScheduleTask<T> task) {
-            tasks.add(task);
+            if ( ! isShutdown) tasks.add(task);
             return task;
         }
 
