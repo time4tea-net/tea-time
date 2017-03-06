@@ -41,13 +41,40 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         assertThat(future.isCancelled(), equalTo(true));
     }
 
+    @Test(expected = CancellationException.class)
+    public void gettingCancelledFuture() throws Exception {
+        ScheduledFuture<Integer> future = service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
+        future.cancel(true);
+        future.get();
+    }
+
+    @Test(expected = CancellationException.class)
+    public void gettingCancelledFutureWithTimeout() throws Exception {
+        ScheduledFuture<Integer> future = service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
+        future.cancel(true);
+        future.get(1, TimeUnit.MILLISECONDS);
+    }
+
     @Test
     public void canRetrieveTheResultOnceTheTaskHasRun() throws Exception {
         ScheduledFuture<Integer> future = service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
         service.timePasses(Duration.ofSeconds(1));
         assertThat(counter.get(), equalTo(1));
         assertThat(future.get(), equalTo(1));
+        assertThat(future.get(1, TimeUnit.MILLISECONDS), equalTo(1));
         assertThat(future.isDone(), equalTo(true));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void retrievingResultBeforeTaskHasRunThrows() throws Exception {
+        ScheduledFuture<Integer> future = service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
+        future.get();
+    }
+
+    @Test(expected = TimeoutException.class)
+    public void retrievingResultWithTimeoutBeforeTaskRuns() throws Exception {
+        ScheduledFuture<Integer> future = service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
+        future.get(1, TimeUnit.MILLISECONDS);
     }
 
 
@@ -99,12 +126,18 @@ public class ControllableSimpleScheduledExecutorServiceTest {
 
             @Override
             public T get() throws InterruptedException, ExecutionException {
-                return result;
+                if ( isCancelled ) throw new CancellationException("get() on cancelled task");
+                if ( isDone ) return result;
+                throw new IllegalStateException("get() before task runs");
             }
 
             @Override
             public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-                throw new UnsupportedOperationException("james didn't write");
+                if ( isCancelled ) throw new CancellationException("get(timeout) on cancelled task");
+                if ( isDone ) return result;
+                throw new TimeoutException("task not scheduled to run for another " + Duration.ofMillis(
+                        timeToRun - clock
+                ));
             }
 
             public void execute() {
