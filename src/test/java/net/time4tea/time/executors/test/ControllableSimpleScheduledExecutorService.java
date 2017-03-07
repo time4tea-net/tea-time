@@ -151,14 +151,16 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
 
     public void timePasses(Duration duration) {
 
+        long durationMillis = duration.toMillis();
+
         while (true) {
-            if (!(runNextTask(clock, clock + duration.toMillis()))) break;
+            if (!(runNextTask(clock + durationMillis))) break;
         }
 
-        clock += duration.toMillis();
+        clock += durationMillis;
     }
 
-    private boolean runNextTask(long clock, long endOfPeriod) {
+    private boolean runNextTask(long endOfPeriod) {
 
         Queue<SimpleScheduleTask> nextTasks = emptyTaskList();
         boolean ranSomething = false;
