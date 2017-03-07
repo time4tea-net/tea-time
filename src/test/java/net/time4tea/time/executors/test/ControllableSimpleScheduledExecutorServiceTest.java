@@ -132,4 +132,15 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         future.get(1, TimeUnit.MILLISECONDS);
     }
 
+    @Test
+    public void schedulingATaskAtFixedRateWillRunItAfterInitialDuration() throws Exception {
+        service.scheduleAtFixedRate(() -> counter.incrementAndGet(), Duration.ofSeconds(1), Duration.ofHours(1));
+        assertThat(counter.get(), equalTo(0));
+        service.timePasses(Duration.ofMillis(999));
+        assertThat(counter.get(), equalTo(0));
+        service.timePasses(Duration.ofMillis(1));
+        assertThat(counter.get(), equalTo(1));
+
+
+    }
 }

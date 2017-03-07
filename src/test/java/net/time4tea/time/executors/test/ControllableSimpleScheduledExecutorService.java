@@ -70,7 +70,7 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
             ));
         }
 
-        public void execute() {
+        private void execute() {
             try {
                 if (! isCancelled) {
                     result = callable.call();
@@ -118,7 +118,12 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
 
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(Runnable runnable, Duration initialDelay, Duration period) {
-        throw new UnsupportedOperationException("james didn't write");
+        return enqueue(new SimpleScheduleTask<>(
+                () -> {
+                    runnable.run();
+                    return null;
+                }, period, clock + initialDelay.toMillis()
+        ));
     }
 
     public void shutdown() {
