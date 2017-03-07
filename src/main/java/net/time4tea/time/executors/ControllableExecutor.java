@@ -1,4 +1,4 @@
-package net.time4tea.time.executors.test;
+package net.time4tea.time.executors;
 
 import java.util.ArrayList;
 import java.util.List;
