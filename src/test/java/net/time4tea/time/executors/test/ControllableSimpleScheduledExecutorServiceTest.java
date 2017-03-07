@@ -140,7 +140,5 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         assertThat(counter.get(), equalTo(0));
         service.timePasses(Duration.ofMillis(1));
         assertThat(counter.get(), equalTo(1));
-
-
     }
 }
