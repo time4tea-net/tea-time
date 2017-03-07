@@ -15,15 +15,19 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
         private final Callable<T> callable;
         private boolean isCancelled = false;
         private boolean isDone = false;
-        private final Duration delay;
+        private final Duration period;
         private final long timeToRun;
         private T result;
         private Throwable error;
 
-        public SimpleScheduleTask(Callable<T> callable, Duration delay, long timeToRun) {
+        public SimpleScheduleTask(Callable<T> callable, Duration period, long timeToRun) {
             this.callable = callable;
-            this.delay = delay;
+            this.period = period;
             this.timeToRun = timeToRun;
+        }
+
+        public SimpleScheduleTask(Callable<T> callable, long timeToRun) {
+            this(callable, null, timeToRun);
         }
 
         @Override
@@ -54,17 +58,17 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
 
         @Override
         public T get() throws InterruptedException, ExecutionException {
-            if ( isCancelled ) throw new CancellationException("get() on cancelled task");
-            if ( error != null ) throw new ExecutionException(error);
-            if ( isDone ) return result;
+            if (isCancelled) throw new CancellationException("get() on cancelled task");
+            if (error != null) throw new ExecutionException(error);
+            if (isDone) return result;
             throw new IllegalStateException("get() before task runs");
         }
 
         @Override
         public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            if ( isCancelled ) throw new CancellationException("get(timeout) on cancelled task");
-            if ( error != null ) throw new ExecutionException(error);
-            if ( isDone ) return result;
+            if (isCancelled) throw new CancellationException("get(timeout) on cancelled task");
+            if (error != null) throw new ExecutionException(error);
+            if (isDone) return result;
             throw new TimeoutException("task not scheduled to run for another " + Duration.ofMillis(
                     timeToRun - clock
             ));
@@ -72,15 +76,24 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
 
         private void execute() {
             try {
-                if (! isCancelled) {
+                if (!isCancelled) {
                     result = callable.call();
                 }
             } catch (Exception e) {
                 error = e;
-            }
-            finally {
+            } finally {
                 isDone = true;
             }
+        }
+
+        public boolean isPeriodic() {
+            return period != null;
+        }
+
+        public SimpleScheduleTask<T> atNextExecutionTimeAfter(long clock) {
+            return new SimpleScheduleTask<>(
+                    callable, period, clock + period.toMillis()
+            );
         }
     }
 
@@ -92,12 +105,12 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
     @Override
     public <T> ScheduledFuture<T> schedule(Callable<T> callable, Duration delay) {
         return enqueue(new SimpleScheduleTask<>(
-                callable, delay, clock + delay.toMillis()
+                callable, clock + delay.toMillis()
         ));
     }
 
     private <T> ScheduledFuture<T> enqueue(SimpleScheduleTask<T> task) {
-        if ( ! isShutdown) tasks.add(task);
+        if (!isShutdown) tasks.add(task);
         return task;
     }
 
@@ -107,7 +120,7 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
                 () -> {
                     runnable.run();
                     return null;
-                }, delay, clock + delay.toMillis()
+                },clock + delay.toMillis()
         ));
     }
 
@@ -136,10 +149,19 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
     }
 
     private void runPendingTasks() {
+
+        List<SimpleScheduleTask> nextTasks = new ArrayList<>();
+
         for (SimpleScheduleTask task : tasks) {
             if (task.timeToRun <= clock) {
                 task.execute();
+                if (task.isPeriodic()) {
+                    nextTasks.add(task.atNextExecutionTimeAfter(clock));
+                }
+            } else {
+                nextTasks.add(task);
             }
         }
+        tasks = nextTasks;
     }
 }

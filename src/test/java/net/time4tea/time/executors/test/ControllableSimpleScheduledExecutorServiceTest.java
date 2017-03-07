@@ -141,4 +141,17 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         service.timePasses(Duration.ofMillis(1));
         assertThat(counter.get(), equalTo(1));
     }
+
+    @Test
+    public void schedulingATaskAtFixedRateWillRunItPeriodically() throws Exception {
+        service.scheduleAtFixedRate(() -> counter.incrementAndGet(), Duration.ofSeconds(1), Duration.ofHours(1));
+        service.timePasses(Duration.ofSeconds(1));
+        assertThat(counter.get(), equalTo(1));
+        service.timePasses(Duration.ofMinutes(1));
+        assertThat(counter.get(), equalTo(1));
+        service.timePasses(Duration.ofMinutes(59));
+        assertThat(counter.get(), equalTo(2));
+        service.timePasses(Duration.ofHours(1));
+        assertThat(counter.get(), equalTo(3));
+    }
 }
