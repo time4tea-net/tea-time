@@ -130,9 +130,17 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
         ));
     }
 
+    /**
+     * this doesn't really work quite the same as real life, as we don't know how much to add for the delay...
+     */
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(Runnable runnable, Duration initialDelay, Duration delay) {
-        throw new UnsupportedOperationException("james didn't write");
+        return enqueue(new SimpleScheduleTask<>(
+                () -> {
+                    runnable.run();
+                    return null;
+                }, delay, clock + initialDelay.toMillis()
+        ));
     }
 
     @Override

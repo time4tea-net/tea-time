@@ -163,4 +163,19 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         service.timePasses(Duration.ofHours(5));
         assertThat(counter.get(), equalTo(6));
     }
+
+    @Test
+    public void schedulingATaskAtFixedDelayWorksJustTheSameAsFixedRate() throws Exception {
+        service.scheduleWithFixedDelay(() -> counter.incrementAndGet(), Duration.ofSeconds(1), Duration.ofHours(1));
+        service.timePasses(Duration.ofSeconds(1));
+        assertThat(counter.get(), equalTo(1));
+        service.timePasses(Duration.ofMinutes(1));
+        assertThat(counter.get(), equalTo(1));
+        service.timePasses(Duration.ofMinutes(59));
+        assertThat(counter.get(), equalTo(2));
+        service.timePasses(Duration.ofHours(1));
+        assertThat(counter.get(), equalTo(3));
+    }
+
+
 }
