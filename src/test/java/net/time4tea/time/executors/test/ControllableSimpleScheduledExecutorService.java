@@ -1,15 +1,21 @@
 package net.time4tea.time.executors.test;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.concurrent.*;
+
+import static java.util.Comparator.comparingLong;
 
 public class ControllableSimpleScheduledExecutorService implements SimpleScheduledExecutorService {
 
     private long clock = 0L;
     private boolean isShutdown = false;
-    private List<SimpleScheduleTask> tasks = new ArrayList<>();
+    private Queue<SimpleScheduleTask> tasks = emptyTaskList();
+
+    private Queue<SimpleScheduleTask> emptyTaskList() {
+        return new PriorityQueue<>(comparingLong(tasks -> tasks.getDelay(TimeUnit.MILLISECONDS)));
+    }
 
     private class SimpleScheduleTask<T> implements ScheduledFuture<T> {
         private final Callable<T> callable;
@@ -120,7 +126,7 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
                 () -> {
                     runnable.run();
                     return null;
-                },clock + delay.toMillis()
+                }, clock + delay.toMillis()
         ));
     }
 
@@ -144,24 +150,33 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
     }
 
     public void timePasses(Duration duration) {
+
+        while (true) {
+            if (!(runNextTask(clock, clock + duration.toMillis()))) break;
+        }
+
         clock += duration.toMillis();
-        runPendingTasks();
     }
 
-    private void runPendingTasks() {
+    private boolean runNextTask(long clock, long endOfPeriod) {
 
-        List<SimpleScheduleTask> nextTasks = new ArrayList<>();
+        Queue<SimpleScheduleTask> nextTasks = emptyTaskList();
+        boolean ranSomething = false;
 
         for (SimpleScheduleTask task : tasks) {
-            if (task.timeToRun <= clock) {
+            long executionTimeOfTask = task.timeToRun;
+            if ( executionTimeOfTask <= endOfPeriod) {
+                ranSomething = true;
                 task.execute();
                 if (task.isPeriodic()) {
-                    nextTasks.add(task.atNextExecutionTimeAfter(clock));
+                    nextTasks.add(task.atNextExecutionTimeAfter(executionTimeOfTask));
                 }
-            } else {
+            }
+            else {
                 nextTasks.add(task);
             }
         }
         tasks = nextTasks;
+        return ranSomething;
     }
 }
