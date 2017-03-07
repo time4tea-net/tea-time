@@ -92,6 +92,15 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         assertThat(future.isDone(), equalTo(true));
     }
 
+    @Test
+    public void schedulingTasksInDifferentOrders() throws Exception {
+        service.schedule(() -> counter.addAndGet(10), Duration.ofSeconds(10));
+        service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
+
+        service.timePasses(Duration.ofSeconds(1));
+        assertThat(counter.get(), equalTo(1));
+    }
+
     @Test(expected = IllegalStateException.class)
     public void retrievingResultBeforeTaskHasRunThrows() throws Exception {
         ScheduledFuture<Integer> future = service.schedule(() -> counter.incrementAndGet(), Duration.ofSeconds(1));
@@ -176,6 +185,4 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         service.timePasses(Duration.ofHours(1));
         assertThat(counter.get(), equalTo(3));
     }
-
-
 }
