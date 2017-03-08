@@ -29,7 +29,7 @@ Use a tea-time Clock.
 ## How to use in tests
 
 ```java
-TickingClock clock = TickingClock.atUTC("2017/10/02 10:23:44.000")
+Clock clock = TickingClock.atUTC("2017/10/02 10:23:44.000")
 
 MyClass myClass = new MyClass(clock);
 
