@@ -1,10 +1,22 @@
 apply plugin: 'java'
-apply plugin: 'maven-publish'
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'io.codearte.nexus-staging'
 
 group = "net.time4tea"
 version = '1.0'
 
 sourceCompatibility = 1.8
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3"
+    }
+}
+
 
 task wrapper(type: Wrapper) {
     gradleVersion = '3.4.1'
@@ -14,25 +26,6 @@ repositories {
     mavenCentral()
 }
 
-publishing {
-    repositories {
-        maven {
-            mavenCentral()
-        }
-    }
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-
-            artifact sourceJar {
-                classifier "sources"
-            }
-            artifact javadocJar {
-                classifier "javadoc"
-            }
-        }
-    }
-}
 
 task sourceJar(type: Jar) {
     from sourceSets.main.allJava
@@ -42,6 +35,45 @@ task sourceJar(type: Jar) {
 task javadocJar(type: Jar) {
     from javadoc
 }
+
+nexusStaging {
+    username = ossrhUser
+    password = ossrhPassword
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            // POM signature
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+            // Target repository
+            repository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
+                authentication(userName: ossrhUser, password: ossrhPassword)
+            }
+            pom.project {
+                name project.name
+                description project.description
+                packaging 'jar'
+                url 'https://github.com/time4tea-net/tea-time'
+
+                scm {
+                    connection 'scm:git:https://github.com/time4tea-net/tea-time.git'
+                    developerConnection 'scm:git:git@github.com:time4tea-net/tea-time.git'
+                    url 'https://github.com/time4tea-net/tea-time.git'
+                }
+
+                licenses {
+                    license {
+                        name "Apache 2.0"
+                        url 'https://opensource.org/licenses/Apache-2.0'
+                        distribution 'repo'
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
