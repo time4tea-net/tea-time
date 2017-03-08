@@ -1,7 +1,10 @@
 apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+group = "net.time4tea"
+version = '1.0'
 
 sourceCompatibility = 1.8
-version = '1.0'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '3.4.1'
@@ -9,6 +12,27 @@ task wrapper(type: Wrapper) {
 
 repositories {
     mavenCentral()
+}
+
+publishing {
+    repositories {
+        maven {
+            mavenCentral()
+        }
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+    }
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
 }
 
 dependencies {
