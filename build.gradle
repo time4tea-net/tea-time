@@ -1,10 +1,13 @@
+import java.time.ZonedDateTime
+
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'io.codearte.nexus-staging'
 
 group = "net.time4tea"
-version = '1.0'
+version = '0.0.1-SNAPSHOT'
+description = "A small library to help you control time in your application, so you can test it"
 
 sourceCompatibility = 1.8
 
@@ -17,7 +20,6 @@ buildscript {
     }
 }
 
-
 task wrapper(type: Wrapper) {
     gradleVersion = '3.4.1'
 }
@@ -26,6 +28,15 @@ repositories {
     mavenCentral()
 }
 
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'tea-time'
+        attributes 'Implementation-Version': project.version
+        attributes 'Implementation-Vendor': 'time4tea technology'
+        attributes 'Implementation-Vendor-Id': 'net.time4tea'
+        attributes 'Built-On': ZonedDateTime.now()
+    }
+}
 
 task sourceJar(type: Jar) {
     from sourceSets.main.allJava
@@ -34,6 +45,10 @@ task sourceJar(type: Jar) {
 
 task javadocJar(type: Jar) {
     from javadoc
+}
+
+artifacts {
+    archives javadocJar, sourceJar
 }
 
 nexusStaging {
@@ -47,7 +62,10 @@ uploadArchives {
             // POM signature
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
             // Target repository
-            repository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
+                authentication(userName: ossrhUser, password: ossrhPassword)
+            }
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
                 authentication(userName: ossrhUser, password: ossrhPassword)
             }
             pom.project {
@@ -73,7 +91,6 @@ uploadArchives {
         }
     }
 }
-
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
