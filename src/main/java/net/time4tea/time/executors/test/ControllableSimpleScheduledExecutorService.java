@@ -6,11 +6,38 @@ import java.time.Duration;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 import static java.util.Comparator.comparingLong;
 
 public class ControllableSimpleScheduledExecutorService implements SimpleScheduledExecutorService {
 
+    public static class NothingUnderTheCovers implements UnderTheCovers {
+
+        @Override
+        public void exceptionThrown(Throwable e) {
+
+        }
+
+        @Override
+        public void taskExecuted() {
+        }
+
+        @Override
+        public void taskCount(int tasksInQueue) {
+
+        }
+    }
+
+    public ControllableSimpleScheduledExecutorService() {
+        this.underTheCovers = new NothingUnderTheCovers();
+    }
+
+    public ControllableSimpleScheduledExecutorService(UnderTheCovers underTheCovers) {
+        this.underTheCovers = underTheCovers;
+    }
+
+    private final UnderTheCovers underTheCovers;
     private long clock = 0L;
     private boolean isShutdown = false;
     private Queue<SimpleScheduleTask> tasks = emptyTaskList();
@@ -50,7 +77,7 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            if ( isDone ) {
+            if (isDone) {
                 return false;
             }
             isCancelled = true;
@@ -85,13 +112,14 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
             ));
         }
 
-        private void execute() {
+        private void execute(Consumer<Throwable> exceptioner) {
             try {
                 if (!isCancelled) {
                     result = callable.call();
                 }
             } catch (Exception e) {
                 error = e;
+                exceptioner.accept(e);
             } finally {
                 isDone = true;
             }
@@ -122,6 +150,7 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
 
     private <T> ScheduledFuture<T> enqueue(SimpleScheduleTask<T> task) {
         if (!isShutdown) tasks.add(task);
+        underTheCovers.taskCount(tasks.size());
         return task;
     }
 
@@ -167,7 +196,9 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
         long durationMillis = duration.toMillis();
 
         while (true) {
-            if (!(runNextTask(clock + durationMillis))) break;
+            boolean ran = runNextTask(clock + durationMillis);
+            if (ran) underTheCovers.taskExecuted();
+            if (!ran) break;
         }
 
         clock += durationMillis;
@@ -179,16 +210,16 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
         boolean ranSomething = false;
 
         for (SimpleScheduleTask task : tasks) {
-            if ( task.isCancelled( ) ) continue;
+            if (task.isCancelled()) continue;
             long executionTimeOfTask = task.timeToRun;
-            if ( executionTimeOfTask <= endOfPeriod) {
+            if (executionTimeOfTask <= endOfPeriod) {
                 ranSomething = true;
-                task.execute();
+                Consumer<Throwable> consumer = underTheCovers::exceptionThrown;
+                task.execute(consumer);
                 if (task.isPeriodic()) {
                     nextTasks.add(task.atNextExecutionTimeAfter(executionTimeOfTask));
                 }
-            }
-            else {
+            } else {
                 nextTasks.add(task);
             }
         }

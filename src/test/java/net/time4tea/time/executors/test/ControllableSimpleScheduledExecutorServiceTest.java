@@ -7,8 +7,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 public class ControllableSimpleScheduledExecutorServiceTest {
 
@@ -202,4 +201,21 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         service.timePasses(Duration.ofHours(1));
         assertThat(counter.get(), equalTo(3));
     }
+
+    @Test
+    public void lookingUnderTheCoversCanTellWhenAnExceptionIsThrown() throws Exception {
+        LookingUnderTheCovers underTheCovers = new LookingUnderTheCovers();
+        ControllableSimpleScheduledExecutorService service = new ControllableSimpleScheduledExecutorService(underTheCovers);
+        service.schedule(() -> { throw new NullPointerException("oops");}, Duration.ofSeconds(1));
+
+        assertThat("count", underTheCovers.taskCount(), equalTo(1));
+        assertThat("executed", underTheCovers.tasksExecuted(), equalTo(0));
+
+        service.timePasses(Duration.ofDays(1));
+
+        assertThat("executed, after", underTheCovers.tasksExecuted(), equalTo(1));
+        assertThat("exceptions", underTheCovers.exceptions(), hasSize(1));
+        assertThat("exeption message", underTheCovers.exceptions().get(0).getMessage(), equalTo("oops"));
+    }
+
 }
