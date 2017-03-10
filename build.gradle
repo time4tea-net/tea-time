@@ -2,22 +2,23 @@ import java.time.ZonedDateTime
 
 apply plugin: 'java'
 apply plugin: 'maven'
-apply plugin: 'signing'
-apply plugin: 'io.codearte.nexus-staging'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
 
 group = "net.time4tea"
-version = project.hasProperty("VERSION") ? project.VERSION : '0.0.1-SNAPSHOT'
+version = project.hasProperty('VERSION') ? project.VERSION : 'LOCAL'
 
 description = "A small library to help you control time in your application, so you can test it"
 
-sourceCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 buildscript {
     repositories {
-        mavenCentral()
+        jcenter()
     }
     dependencies {
-        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3"
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
     }
 }
 
@@ -39,72 +40,67 @@ jar {
     }
 }
 
-task sourceJar(type: Jar) {
+task sourcesJar(type: Jar) {
+    classifier 'sources"'
     from sourceSets.main.allJava
 }
 
-
 task javadocJar(type: Jar) {
+    classifier 'javadoc'
     from javadoc
 }
 
-artifacts {
-    archives javadocJar, sourceJar
-}
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = archivesBaseName
 
-signing {
-    sign configurations.archives
-}
-
-nexusStaging {
-    username = ossrhUser
-    password = ossrhPassword
-}
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            // POM signature
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-            // Target repository
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
-                authentication(userName: ossrhUser, password: ossrhPassword)
+            pom.withXml {
+                asNode().appendNode('name', archivesBaseName)
+                asNode().appendNode('description', description)
+                asNode().appendNode('url', 'https://github.com/time4tea-net/tea-time')
+                asNode().appendNode('developers').appendNode('developer').
+                        appendNode('name', 'James Richardson').parent().
+                        appendNode('email', 'james+tea@time4tea.net')
+                asNode().appendNode('scm').
+                        appendNode('url', 'https://github.com/time4tea-net/tea-time.git').parent().
+                        appendNode('connection', 'scm:git:https://github.com/time4tea-net/tea-time.git').parent().
+                        appendNode('developerConnection', 'scm:git:git@github.com:time4tea-net/tea-time.git')
+                asNode().appendNode('licenses').appendNode('license').
+                        appendNode('name', 'Apache License, Version 2.0').parent().
+                        appendNode('url', 'http://www.apache.org/licenses/LICENSE-2.0.html')
             }
-            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: ossrhUser, password: ossrhPassword)
-            }
-            pom.project {
-                name project.name
-                description project.description
-                packaging 'jar'
-                url 'https://github.com/time4tea-net/tea-time'
+            from components.java
 
-                scm {
-                    connection 'scm:git:https://github.com/time4tea-net/tea-time.git'
-                    developerConnection 'scm:git:git@github.com:time4tea-net/tea-time.git'
-                    url 'https://github.com/time4tea-net/tea-time.git'
-                }
-
-                licenses {
-                    license {
-                        name "Apache 2.0"
-                        url 'https://opensource.org/licenses/Apache-2.0'
-                        distribution 'repo'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'time4tea'
-                        name = 'James Richardson'
-                        email = 'james+teatime@timetea.net'
-                    }
-                }
-            }
+            artifact sourcesJar
+            artifact javadocJar
         }
     }
 }
 
+bintray {
+    user = bintrayUser
+    key = project.hasProperty('bintrayApiKey') ? project.bintrayApiKey : 'BINTRAYKEY'
+
+    publications = ['mavenJava']
+    dryRun = false
+    publish = true
+    pkg {
+        repo = 'oss'
+        name = archivesBaseName
+
+        desc = description
+        websiteUrl = 'https://github.com/time4tea-net/tea-time'
+        issueTrackerUrl = 'https://github.com/time4tea-net/tea-time/issues'
+        vcsUrl = 'https://github.com/time4tea-net/tea-time.git'
+        licenses = ['Apache-2.0']
+        labels = []
+        publicDownloadNumbers = false
+        version {
+            name = project.version
+        }
+    }
+}
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
     testCompile 'org.hamcrest:hamcrest-all:1.3'
