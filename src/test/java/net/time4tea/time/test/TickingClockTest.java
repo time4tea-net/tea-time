@@ -20,4 +20,10 @@ public class TickingClockTest {
         clock.tick(Duration.ofSeconds(1));
         assertThat(clock.now().toInstant(), equalTo(Instant.ofEpochMilli(1488732826123L)));
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void clockCannotBeTickedBack() throws Exception {
+        TickingClock clock = TickingClock.atUTC("2017/03/05 16:53:45.123");
+        clock.tick(Duration.ofSeconds(-1));
+    }
 }

@@ -23,6 +23,9 @@ public class TickingClock implements Clock {
     }
 
     public void tick(Duration duration) {
+        if ( duration.isNegative() ) {
+            throw new IllegalArgumentException("clocks can only tick forwards, not by " + duration);
+        }
         now = now.plus(duration);
     }
 }
