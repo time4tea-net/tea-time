@@ -1,3 +1,5 @@
 #!/bin/bash
 
-$(dirname $0)/gradlew test
+$(dirname $0)/gradlew test uploadArchives closeAndPromoteRepository
+
+
