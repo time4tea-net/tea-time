@@ -2,6 +2,8 @@
 
 [ ![Codeship Status for time4tea-net/tea-time](https://app.codeship.com/projects/dddf5cb0-e3f8-0134-b021-7a2224107979/status?branch=master)](https://app.codeship.com/projects/206081)
 
+[ ![Download](https://api.bintray.com/packages/time4tea/oss/tea-time/images/download.svg) ](https://bintray.com/time4tea/oss/tea-time/_latestVersion)
+ 
 ## What is it
 
 A collection of test friendly implementations of time for Java 8
