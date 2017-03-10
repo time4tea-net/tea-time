@@ -1,25 +1,17 @@
 #!/bin/bash
 
-BASE_VERSION=0.1
-BUILD_VERSION="1-SNAPSHOT"
 RELEASE=no
 ADDITIONAL_TASKS=""
+WHAT="test"
 
 # codeshop magic beans
 if [ ! -z "$CI_BUILD_NUMBER" ]
 then
-    BUILD_VERSION=$CI_BUILD_NUMBER
-    RELEASE="yes"
+    VERSION="0.0.$CI_BUILD_NUMBER"
+    WHAT="-PVERSION=$VERSION -PbintrayUser=$BINTRAY_USER -PbintrayApiKey=$BINTRAY_API_KEY test bintrayUpload"
 fi
 
-VERSION=${BASE_VERSION}.${BUILD_VERSION}
-
-if [ $RELEASE = "yes" ]
-then
-    ADDITIONAL_TASKS="uploadArchives closeAndPromoteRepository"
-fi
-
-$(dirname $0)/gradlew -PVERSION=${VERSION} test ${ADDITIONAL_TASKS}
+$(dirname $0)/gradlew $WHAT
 
 
 
