@@ -164,6 +164,14 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         assertThat(counter.get(), equalTo(3));
     }
 
+    @Test
+    public void cannotCancelATaskThatHasCompleted() throws Exception {
+        ScheduledFuture<?> future = service.schedule(() -> counter.incrementAndGet(), Duration.ofHours(1));
+        service.timePasses(Duration.ofHours(1));
+        assertThat(counter.get(), equalTo(1));
+        boolean cancelled = future.cancel(true);
+        assertThat(cancelled, equalTo(false));
+    }
 
     @Test
     public void cancellingARepeatedTaskBeforeItEverShouldRunNeverRuns() throws Exception {

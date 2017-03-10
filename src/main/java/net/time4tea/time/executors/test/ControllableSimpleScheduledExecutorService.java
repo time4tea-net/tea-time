@@ -50,6 +50,9 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
+            if ( isDone ) {
+                return false;
+            }
             isCancelled = true;
             return true;
         }
