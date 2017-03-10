@@ -176,6 +176,7 @@ public class ControllableSimpleScheduledExecutorService implements SimpleSchedul
         boolean ranSomething = false;
 
         for (SimpleScheduleTask task : tasks) {
+            if ( task.isCancelled( ) ) continue;
             long executionTimeOfTask = task.timeToRun;
             if ( executionTimeOfTask <= endOfPeriod) {
                 ranSomething = true;

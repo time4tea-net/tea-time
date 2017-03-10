@@ -164,6 +164,15 @@ public class ControllableSimpleScheduledExecutorServiceTest {
         assertThat(counter.get(), equalTo(3));
     }
 
+
+    @Test
+    public void cancellingARepeatedTaskBeforeItEverShouldRunNeverRuns() throws Exception {
+        ScheduledFuture<?> future = service.scheduleAtFixedRate(() -> counter.incrementAndGet(), Duration.ofSeconds(1), Duration.ofHours(1));
+        future.cancel(true);
+        service.timePasses(Duration.ofHours(2));
+        assertThat(counter.get(), equalTo(0));
+    }
+
     @Test
     public void schedulingAtFixedRateWillRunItEveryTimePeriod() throws Exception {
         service.scheduleAtFixedRate(() -> counter.incrementAndGet(), Duration.ofSeconds(1), Duration.ofHours(1));
