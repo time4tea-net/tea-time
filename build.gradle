@@ -6,7 +6,8 @@ apply plugin: 'signing'
 apply plugin: 'io.codearte.nexus-staging'
 
 group = "net.time4tea"
-version = '0.0.1'
+version = project.hasProperty("VERSION") ? project.VERSION : '0.0.1-SNAPSHOT'
+
 description = "A small library to help you control time in your application, so you can test it"
 
 sourceCompatibility = 1.8
