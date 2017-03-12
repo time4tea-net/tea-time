@@ -50,6 +50,11 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -70,10 +75,6 @@ publishing {
                         appendNode('name', 'Apache License, Version 2.0').parent().
                         appendNode('url', 'http://www.apache.org/licenses/LICENSE-2.0.html')
             }
-            from components.java
-
-            artifact sourcesJar
-            artifact javadocJar
         }
     }
 }
@@ -83,6 +84,8 @@ bintray {
     key = project.hasProperty('bintrayApiKey') ? project.bintrayApiKey : 'BINTRAYKEY'
 
     publications = ['mavenJava']
+    configurations = [ 'archives' ]
+    publish = true
     dryRun = false
     pkg {
         repo = 'oss'
@@ -94,7 +97,7 @@ bintray {
         vcsUrl = 'https://github.com/time4tea-net/tea-time.git'
         licenses = ['Apache-2.0']
         labels = []
-        publicDownloadNumbers = false
+        publicDownloadNumbers = true
         publish = true
         version {
             name = project.version
