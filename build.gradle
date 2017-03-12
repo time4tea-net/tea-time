@@ -84,7 +84,6 @@ bintray {
 
     publications = ['mavenJava']
     dryRun = false
-    publish = true
     pkg {
         repo = 'oss'
         name = archivesBaseName
@@ -96,6 +95,7 @@ bintray {
         licenses = ['Apache-2.0']
         labels = []
         publicDownloadNumbers = false
+        publish = true
         version {
             name = project.version
         }
