@@ -4,7 +4,7 @@ RELEASE=no
 ADDITIONAL_TASKS=""
 WHAT="test"
 
-# codeshop magic beans
+# codeship magic beans
 if [ ! -z "$CI_BUILD_NUMBER" ]
 then
     VERSION="0.0.$CI_BUILD_NUMBER"
