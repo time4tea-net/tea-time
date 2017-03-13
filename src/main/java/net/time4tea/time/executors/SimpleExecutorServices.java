@@ -7,7 +7,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class SimpleExecutorServices {
-    public SimpleScheduledExecutorService wrapping(ScheduledExecutorService service) {
+    public static SimpleScheduledExecutorService wrapping(ScheduledExecutorService service) {
         return new SimpleScheduledExecutorService() {
             @Override
             public boolean isShutdown() {
